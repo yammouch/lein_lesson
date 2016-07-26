@@ -20,12 +20,32 @@
         '(org.nd4j.linalg.lossfunctions LossFunctions
                                         LossFunctions$LossFunction))
 
+(require 'dl4j-03.schemanip)
+(alias 'smp 'dl4j-03.schemanip)
+
+(def rinput (ref nil))
+(def rlabels (ref nil))
+
 (defn make-ds []
-  (let [input  (Nd4j/create (float-array [0 0, 1 0, 0 1, 1 1])
-                            (int-array [4 2]))
-        labels (Nd4j/create (float-array [1 0, 0 1, 0 1, 1 0])
-                            (int-array [4 2]))]
-    (DataSet. input labels)))
+  (let [training-data (->> {:field (read-string (slurp "td000.txt"))
+                            :cmd   {:cmd :move-y :org [9 6] :dst 9}}
+                           smp/expand
+                           (map smp/mlp-input)
+                           vec)
+        n  (count training-data)
+        ni (count ((first training-data) :niv))
+        no (count ((first training-data) :eov))
+        input  (make-array Float/TYPE n ni)
+        labels (make-array Float/TYPE n no)]
+    (doseq [i (range n)]
+      (aset input  i (float-array ((nth training-data i) :niv)))
+      (aset labels i (float-array ((nth training-data i) :eov))))
+    (dosync
+      (ref-set rinput input)
+      (ref-set rlabels input))
+    [(DataSet. (Nd4j/create input)
+               (Nd4j/create labels))
+     ni no]))
 
 (defn make-builder []
   (let [builder (NeuralNetConfiguration$Builder.)]
@@ -39,33 +59,33 @@
       (.miniBatch false))
     builder))
 
-(defn make-hidden-layer-builder []
+(defn make-hidden-layer-builder [ni]
   (let [hidden-layer-builder (DenseLayer$Builder.)]
     (doto hidden-layer-builder
-      (.nIn 2)
+      (.nIn ni)
       (.nOut 4)
       (.activation "sigmoid")
       (.weightInit WeightInit/DISTRIBUTION)
       (.dist (UniformDistribution. 0 1)))
     hidden-layer-builder))
 
-(defn make-output-layer-builder []
+(defn make-output-layer-builder [no]
   (let [output-layer-builder
         (OutputLayer$Builder.
          LossFunctions$LossFunction/NEGATIVELOGLIKELIHOOD)]
     (doto output-layer-builder
       (.nIn 4)
-      (.nOut 2)
+      (.nOut no)
       (.activation "sigmoid")
       (.weightInit WeightInit/DISTRIBUTION)
       (.dist (UniformDistribution. 0 1)))
     output-layer-builder))
 
-(defn make-list-builder []
+(defn make-list-builder [ni no]
   (let [list-builder (.list (make-builder))]
     (doto list-builder
-      (.layer 0 (.build (make-hidden-layer-builder)))
-      (.layer 1 (.build (make-output-layer-builder)))
+      (.layer 0 (.build (make-hidden-layer-builder ni)))
+      (.layer 1 (.build (make-output-layer-builder no)))
       (.pretrain false)
       (.backprop true))
     list-builder))
@@ -89,14 +109,16 @@
 (defn -main
   "I don't do a whole lot."
   [x]
-  (let [ds (make-ds)
-        list-builder (make-list-builder)
-        conf (.build list-builder)
-        net (MultiLayerNetwork. conf)
-        _ (doto net
-            (.init)
-            (.setListeners [(ScoreIterationListener. 100)]))
-        layers (.getLayers net)]
-    (dump-layers-params layers)
-    (.fit net ds)
-    (dump-result ds net)))
+  (let [[ds ni no] (make-ds)
+        ;list-builder (make-list-builder ni no)
+        ;conf (.build list-builder)
+        ;net (MultiLayerNetwork. conf)
+        ;_ (doto net
+        ;    (.init)
+        ;    (.setListeners [(ScoreIterationListener. 100)]))
+        ;layers (.getLayers net)]
+        ]
+    ;(dump-layers-params layers)
+    ;(.fit net ds)
+    ;(dump-result ds net)))
+    :done))
