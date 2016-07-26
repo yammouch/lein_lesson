@@ -20,44 +20,55 @@
         '(org.nd4j.linalg.lossfunctions LossFunctions
                                         LossFunctions$LossFunction))
 
-(def input  (Nd4j/create (float-array [0 0, 1 0, 0 1, 1 1]) (int-array [4 2])))
-(def labels (Nd4j/create (float-array [1 0, 0 1, 0 1, 1 0]) (int-array [4 2])))
-(def ds (DataSet. input labels))
+(defn make-ds []
+  (let [input  (Nd4j/create (float-array [0 0, 1 0, 0 1, 1 1])
+                            (int-array [4 2]))
+        labels (Nd4j/create (float-array [1 0, 0 1, 0 1, 1 0])
+                            (int-array [4 2]))]
+    (DataSet. input labels)))
 
-(def builder (NeuralNetConfiguration$Builder.))
-(doto builder
-  (.iterations 10000)
-  (.learningRate 0.1)
-  (.seed 123)
-  (.useDropConnect false)
-  (.optimizationAlgo OptimizationAlgorithm/STOCHASTIC_GRADIENT_DESCENT)
-  (.biasInit 0)
-  (.miniBatch false))
+(defn make-builder []
+  (let [builder (NeuralNetConfiguration$Builder.)]
+    (doto builder
+      (.iterations 10000)
+      (.learningRate 0.1)
+      (.seed 123)
+      (.useDropConnect false)
+      (.optimizationAlgo OptimizationAlgorithm/STOCHASTIC_GRADIENT_DESCENT)
+      (.biasInit 0)
+      (.miniBatch false))
+    builder))
 
-(def listBuilder (.list builder))
-(def hiddenLayerBuilder (DenseLayer$Builder.))
-(doto hiddenLayerBuilder
-  (.nIn 2)
-  (.nOut 4)
-  (.activation "sigmoid")
-  (.weightInit WeightInit/DISTRIBUTION)
-  (.dist (UniformDistribution. 0 1)))
+(defn make-hidden-layer-builder []
+  (let [hidden-layer-builder (DenseLayer$Builder.)]
+    (doto hidden-layer-builder
+      (.nIn 2)
+      (.nOut 4)
+      (.activation "sigmoid")
+      (.weightInit WeightInit/DISTRIBUTION)
+      (.dist (UniformDistribution. 0 1)))
+    hidden-layer-builder))
 
-(.layer listBuilder 0 (.build hiddenLayerBuilder))
+(defn make-output-layer-builder []
+  (let [output-layer-builder
+        (OutputLayer$Builder.
+         LossFunctions$LossFunction/NEGATIVELOGLIKELIHOOD)]
+    (doto output-layer-builder
+      (.nIn 4)
+      (.nOut 2)
+      (.activation "sigmoid")
+      (.weightInit WeightInit/DISTRIBUTION)
+      (.dist (UniformDistribution. 0 1)))
+    output-layer-builder))
 
-(def outputLayerBuilder
-     (OutputLayer$Builder. LossFunctions$LossFunction/NEGATIVELOGLIKELIHOOD))
-(doto outputLayerBuilder
-  (.nIn 4)
-  (.nOut 2)
-  (.activation "sigmoid")
-  (.weightInit WeightInit/DISTRIBUTION)
-  (.dist (UniformDistribution. 0 1)))
-
-(doto listBuilder
-  (.layer 1 (.build outputLayerBuilder))
-  (.pretrain false)
-  (.backprop true))
+(defn make-list-builder []
+  (let [list-builder (.list (make-builder))]
+    (doto list-builder
+      (.layer 0 (.build (make-hidden-layer-builder)))
+      (.layer 1 (.build (make-output-layer-builder)))
+      (.pretrain false)
+      (.backprop true))
+    list-builder))
 
 (defn dump-layers-params [layers]
   (loop [i 0, totalNumParams 0]
@@ -78,7 +89,9 @@
 (defn -main
   "I don't do a whole lot."
   [x]
-  (let [conf (.build listBuilder)
+  (let [ds (make-ds)
+        list-builder (make-list-builder)
+        conf (.build list-builder)
         net (MultiLayerNetwork. conf)
         _ (doto net
             (.init)
