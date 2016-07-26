@@ -59,29 +59,31 @@
   (.pretrain false)
   (.backprop true))
 
-(def conf (.build listBuilder))
-(def net (MultiLayerNetwork. conf))
-(.init net)
-(.setListeners net [(ScoreIterationListener. 100)])
-(def layers (.getLayers net))
+(defn dump-layers-params [layers]
+  (loop [i 0, totalNumParams 0]
+    (if (<= (count layers) i)
+      (println "Total number of network parameters: " totalNumParams)
+      (let [nParams (.numParams (nth layers i))]
+        (println "Number of parameters in layer " i ": " nParams)
+        (recur (inc i) (+ totalNumParams nParams))
+        ))))
 
-(loop [i 0, totalNumParams 0]
-  (if (<= (count layers) i)
-    (println "Total number of network parameters: " totalNumParams)
-    (let [nParams (.numParams (nth layers i))]
-      (println "Number of parameters in layer " i ": " nParams)
-      (recur (inc i) (+ totalNumParams nParams)))))
-
-(.fit net ds)
-
-(def output (.output net (.getFeatureMatrix ds)))
-(println output)
-
-(def eval (Evaluation. 2))
-(.eval eval (.getLabels ds) output)
-(println (.stats eval))
+(defn dump-result [ds net]
+  (let [output (.output net (.getFeatureMatrix ds)) 
+        eval (Evaluation. 2)]
+    (println output)
+    (.eval eval (.getLabels ds) output)
+    (println (.stats eval))))
 
 (defn -main
   "I don't do a whole lot."
   [x]
-  (println x "Hello, World!"))
+  (let [conf (.build listBuilder)
+        net (MultiLayerNetwork. conf)
+        _ (doto net
+            (.init)
+            (.setListeners [(ScoreIterationListener. 100)]))
+        layers (.getLayers net)]
+    (dump-layers-params layers)
+    (.fit net ds)
+    (dump-result ds net)))
