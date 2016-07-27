@@ -4,10 +4,10 @@
 
 (defn slide-upper-field [field]
   (assoc field :body
-         (concat (next (get field :body))
-                 [(reduce #(repeat %2 %1) 0
-                          [(count (get-in field [:body 0 0]))
-                           (get-in field [:size 0])])])))
+         (vec (concat (next (get field :body))
+                      [(reduce #(vec (repeat %2 %1)) 0
+                               [(count (get-in field [:body 0 0]))
+                                (get-in field [:size 0])])]))))
 
 (defn slide-upper [{field :field cmd :cmd :as x}]
   (if (or (= (get-in cmd [:org 1]) 0)
@@ -24,10 +24,10 @@
 
 (defn slide-lower-field [field]
   (assoc field :body
-         (cons (reduce #(repeat %2 %1) 0
-                       [(count (get-in field [:body 0 0]))
-                        (get-in field [:size 0])])
-               (butlast (get field :body)))))
+         (vec (cons (reduce #(vec (repeat %2 %1)) 0
+                            [(count (get-in field [:body 0 0]))
+                             (get-in field [:size 0])])
+                    (butlast (get field :body))))))
 
 (defn slide-lower [{field :field cmd :cmd :as x}]
   (if (or (<= (get-in field [:size 1]) (get-in cmd [:org 1]))
@@ -44,10 +44,10 @@
 
 (defn slide-left-field [field]
   (assoc field :body
-         (map #(concat (next %)
-                       [(repeat (count (get-in field [:body 0 0]))
-                                0)])
-              (:body field))))
+         (vec (map #(vec (concat (next %)
+                                 [(repeat (count (get-in field [:body 0 0]))
+                                          0)]))
+                   (:body field)))))
 
 (defn slide-left [{field :field cmd :cmd :as x}]
   (if (or (= (get-in cmd [:org 0]) 0)
@@ -64,9 +64,9 @@
 
 (defn slide-right-field [field]
   (assoc field :body
-         (map #(cons (repeat (count (get-in field [:body 0 0])) 0)
-                     (butlast %))
-              (:body field))))
+         (vec (map #(vec (cons (repeat (count (get-in field [:body 0 0])) 0)
+                               (butlast %)))
+                   (:body field)))))
 
 (defn slide-right [{field :field cmd :cmd :as x}]
   (if (or (<= (get-in field [:size 0]) (get-in cmd [:org 0]))
