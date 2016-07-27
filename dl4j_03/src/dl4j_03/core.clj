@@ -23,9 +23,6 @@
 (require 'dl4j-03.schemanip)
 (alias 'smp 'dl4j-03.schemanip)
 
-(def rinput (ref nil))
-(def rlabels (ref nil))
-
 (defn make-ds []
   (let [training-data (->> {:field (read-string (slurp "td000.txt"))
                             :cmd   {:cmd :move-y :org [9 6] :dst 9}}
@@ -40,9 +37,6 @@
     (doseq [i (range n)]
       (aset input  i (float-array ((nth training-data i) :niv)))
       (aset labels i (float-array ((nth training-data i) :eov))))
-    (dosync
-      (ref-set rinput input)
-      (ref-set rlabels input))
     [(DataSet. (Nd4j/create input)
                (Nd4j/create labels))
      ni no]))
@@ -110,15 +104,13 @@
   "I don't do a whole lot."
   [x]
   (let [[ds ni no] (make-ds)
-        ;list-builder (make-list-builder ni no)
-        ;conf (.build list-builder)
-        ;net (MultiLayerNetwork. conf)
-        ;_ (doto net
-        ;    (.init)
-        ;    (.setListeners [(ScoreIterationListener. 100)]))
-        ;layers (.getLayers net)]
-        ]
-    ;(dump-layers-params layers)
-    ;(.fit net ds)
-    ;(dump-result ds net)))
-    :done))
+        list-builder (make-list-builder ni no)
+        conf (.build list-builder)
+        net (MultiLayerNetwork. conf)
+        _ (doto net
+            (.init)
+            (.setListeners [(ScoreIterationListener. 100)]))
+        layers (.getLayers net)]
+    (dump-layers-params layers)
+    (.fit net ds)
+    (dump-result ds net)))
