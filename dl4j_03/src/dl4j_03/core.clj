@@ -41,11 +41,11 @@
                (Nd4j/create labels))
      ni no]))
 
-(defn make-builder []
+(defn make-builder [iter]
   (let [builder (NeuralNetConfiguration$Builder.)]
     (doto builder
-      (.iterations 10000)
-      (.learningRate 0.1)
+      (.iterations iter)
+      (.learningRate 0.001)
       (.seed 123)
       (.useDropConnect false)
       (.optimizationAlgo OptimizationAlgorithm/STOCHASTIC_GRADIENT_DESCENT)
@@ -53,33 +53,36 @@
       (.miniBatch false))
     builder))
 
-(defn make-hidden-layer-builder [ni]
+(defn make-hidden-layer-builder [ni no]
   (let [hidden-layer-builder (DenseLayer$Builder.)]
     (doto hidden-layer-builder
       (.nIn ni)
-      (.nOut 4)
+      (.nOut no)
       (.activation "sigmoid")
       (.weightInit WeightInit/DISTRIBUTION)
       (.dist (UniformDistribution. 0 1)))
     hidden-layer-builder))
 
-(defn make-output-layer-builder [no]
+(defn make-output-layer-builder [ni no]
   (let [output-layer-builder
         (OutputLayer$Builder.
          LossFunctions$LossFunction/NEGATIVELOGLIKELIHOOD)]
     (doto output-layer-builder
-      (.nIn 4)
+      (.nIn ni)
       (.nOut no)
       (.activation "sigmoid")
       (.weightInit WeightInit/DISTRIBUTION)
       (.dist (UniformDistribution. 0 1)))
     output-layer-builder))
 
-(defn make-list-builder [ni no]
-  (let [list-builder (.list (make-builder))]
+(defn make-list-builder [ni no iter nlayer layersize]
+  (let [list-builder (.list (make-builder iter))]
+    (doseq [i (range 1 (dec nlayer))]
+      (.layer list-builder i
+       (.build (make-hidden-layer-builder layersize layersize))))
     (doto list-builder
-      (.layer 0 (.build (make-hidden-layer-builder ni)))
-      (.layer 1 (.build (make-output-layer-builder no)))
+      (.layer           0  (.build (make-hidden-layer-builder ni layersize)))
+      (.layer (dec nlayer) (.build (make-output-layer-builder layersize no)))
       (.pretrain false)
       (.backprop true))
     list-builder))
@@ -96,15 +99,18 @@
 (defn dump-result [ds net]
   (let [output (.output net (.getFeatureMatrix ds)) 
         eval (Evaluation. 2)]
-    (println output)
+    ;(println output)
     (.eval eval (.getLabels ds) output)
-    (println (.stats eval))))
+    (println (.stats eval))
+    (println (.score net))
+    ))
 
 (defn -main
   "I don't do a whole lot."
-  [x]
+  [iter nlayer layersize]
   (let [[ds ni no] (make-ds)
-        list-builder (make-list-builder ni no)
+        list-builder (apply make-list-builder ni no
+                      (map read-string [iter nlayer layersize]))
         conf (.build list-builder)
         net (MultiLayerNetwork. conf)
         _ (doto net
@@ -112,5 +118,6 @@
             (.setListeners [(ScoreIterationListener. 100)]))
         layers (.getLayers net)]
     (dump-layers-params layers)
-    (.fit net ds)
-    (dump-result ds net)))
+    (time (.fit net ds))
+    (dump-result ds net)
+    ))
