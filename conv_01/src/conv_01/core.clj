@@ -89,7 +89,7 @@
     (let [eval (Evaluation. output-num)]
       (while (.hasNext mnist-test)
         (let [ds (.next mnist-test)
-              output (.output model (.getFeatureMatrix ds false))]
+              output (.output model (.getFeatureMatrix ds) false)]
           (.eval eval (.getLabels ds) output)))
       (.info log (.stats eval)))
     (.reset mnist-test))
