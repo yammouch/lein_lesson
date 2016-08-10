@@ -1,4 +1,4 @@
-; lein 10000 2 10
+; lein 50000 2 10
 
 (ns len1d-0030.core)
 
@@ -73,6 +73,7 @@
   (.. (NeuralNetConfiguration$Builder.)
     (learningRate 0.1)
     (seed 123)
+    (iterations 1) ; default 5
     (graphBuilder)
     (addInputs (into-array String ["input"]))
     (addLayer "L1" (.build (make-hidden-layer-builder ni layersize))
