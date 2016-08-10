@@ -1,4 +1,4 @@
-; lein 10000 2 6
+; lein 10000 2 30
 
 (ns len1d-0020.core)
 
@@ -18,7 +18,6 @@
         '(org.deeplearning4j.optimize.listeners ScoreIterationListener)
         '(org.deeplearning4j.datasets.iterator SamplingDataSetIterator)
         '(org.nd4j.linalg.api.ndarray INDArray)
-        ;'(org.nd4j.linalg.api.iterator SamplingDataSetIterator)
         '(org.nd4j.linalg.dataset DataSet)
         '(org.nd4j.linalg.factory Nd4j)
         '(org.nd4j.linalg.lossfunctions LossFunctions
@@ -47,11 +46,10 @@
                             (int-array [(count ij) field-size])))
      field-size field-size]))
 
-(defn make-builder [iter]
+(defn make-builder []
   (let [builder (NeuralNetConfiguration$Builder.)]
     (doto builder
-      (.iterations iter)
-      ;(.learningRate 0.001)
+      (.iterations 1)
       (.learningRate 0.1)
       (.seed 123)
       (.useDropConnect false)
@@ -84,8 +82,8 @@
       (.dist (UniformDistribution. 0 1)))
     output-layer-builder))
 
-(defn make-list-builder [ni no iter nlayer layersize]
-  (let [list-builder (.list (make-builder iter))]
+(defn make-list-builder [ni no nlayer layersize]
+  (let [list-builder (.list (make-builder))]
     (doseq [i (range 1 (dec nlayer))]
       (.layer list-builder i
        (.build (make-hidden-layer-builder layersize layersize))))
@@ -117,10 +115,9 @@
 (defn -main
   [iter nlayer layersize]
   (let [[ds ni no] (make-ds)
-        ds-iter (SamplingDataSetIterator. ds 32
-                 (.size (.getFeatureMatrix ds) 0))
+        ds-iter (SamplingDataSetIterator. ds 32 (* 32 (read-string iter)))
         list-builder (apply make-list-builder ni no
-                      (map read-string [iter nlayer layersize]))
+                      (map read-string [nlayer layersize]))
         conf (.build list-builder)
         net (MultiLayerNetwork. conf)
         _ (doto net
