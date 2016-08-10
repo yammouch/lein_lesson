@@ -1,3 +1,5 @@
+; lein 10000 2 6
+
 (ns len1d-0010.core)
 
 (import '(org.deeplearning4j.eval Evaluation)
@@ -100,9 +102,9 @@
         (recur (inc i) (+ totalNumParams nParams))
         ))))
 
-(defn dump-result [ds net]
+(defn dump-result [ds net no]
   (let [output (.output net (.getFeatureMatrix ds)) 
-        eval (Evaluation. 2)]
+        eval (Evaluation. no)]
     (println output)
     (.eval eval (.getLabels ds) output)
     (println (.stats eval))
@@ -122,5 +124,5 @@
         layers (.getLayers net)]
     (dump-layers-params layers)
     (time (.fit net ds))
-    (dump-result ds net)
+    (dump-result ds net no)
     ))

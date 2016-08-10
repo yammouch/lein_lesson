@@ -109,7 +109,7 @@
 
 (defn dump-result [ds net]
   (let [output (.output net (.getFeatureMatrix ds)) 
-        eval (Evaluation. 2)]
+        eval (Evaluation. 5)]
     (println output)
     (.eval eval (.getLabels ds) output)
     (println (.stats eval))
