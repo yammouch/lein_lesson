@@ -1,6 +1,6 @@
 ; lein 10000 2 30
-; lein 50000 2 6
-; lein 50000 3 6 fails.
+; lein 50000 2 8
+; lein 50000 3 8
 
 (ns len1d-0040.core)
 
@@ -73,7 +73,7 @@
       (.dist (UniformDistribution. 0 1)))
     hidden-layer-builder))
 
-(defn make-hidden-layer [ni no]
+(defn make-conv-layer [ni no]
   (.. (ConvolutionLayer$Builder. (int-array [1 10]))
       (nIn ni)
       (nOut no)
@@ -98,9 +98,9 @@
   (let [list-builder (.list (make-builder))]
     (doseq [i (range 1 (dec nlayer))]
       (.layer list-builder i
-       (make-hidden-layer layersize layersize)))
+       (.build (make-hidden-layer-builder layersize layersize))))
     (doto list-builder
-      (.layer           0  (make-hidden-layer 1 layersize))
+      (.layer           0  (make-conv-layer 1 layersize))
       (.layer (dec nlayer) (.build (make-output-layer-builder layersize no)))
       (.pretrain false)
       (.backprop true))
