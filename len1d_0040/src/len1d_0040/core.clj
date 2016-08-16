@@ -1,4 +1,6 @@
 ; lein 10000 2 30
+; lein 50000 2 6
+; lein 50000 3 6 fails.
 
 (ns len1d-0040.core)
 
@@ -14,6 +16,7 @@
                                             ConvolutionLayer$Builder
                                             OutputLayer
                                             OutputLayer$Builder)
+        '(org.deeplearning4j.nn.conf.layers.setup ConvolutionLayerSetup)
         '(org.deeplearning4j.nn.multilayer MultiLayerNetwork)
         '(org.deeplearning4j.nn.weights WeightInit)
         '(org.deeplearning4j.optimize.listeners ScoreIterationListener)
@@ -42,9 +45,9 @@
         input  (mapcat (partial apply a-field field-size)        ij)
         labels (mapcat (fn [[i j]] (one-hot field-size (- j i))) ij)]
     [(DataSet. (Nd4j/create (float-array input)
-                            (int-array [(count ij) 1 field-size]))
+                            (int-array [(count ij) field-size]))
                (Nd4j/create (float-array labels)
-                            (int-array [(count ij) 1 field-size])))
+                            (int-array [(count ij) field-size])))
      field-size field-size]))
 
 (defn make-builder []
@@ -127,6 +130,7 @@
         ds-iter (SamplingDataSetIterator. ds 32 (* 32 (read-string iter)))
         list-builder (apply make-list-builder ni no
                       (map read-string [nlayer layersize]))
+        _ (ConvolutionLayerSetup. list-builder 1 10 1)
         conf (.build list-builder)
         net (MultiLayerNetwork. conf)
         _ (doto net
