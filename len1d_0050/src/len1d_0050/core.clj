@@ -1,4 +1,4 @@
-; lein 10000 6
+; lein 10000 2 6
 
 (ns len1d-0050.core
   (:gen-class))
@@ -7,8 +7,11 @@
         '(org.deeplearning4j.nn.api Layer OptimizationAlgorithm)
         '(org.deeplearning4j.nn.conf NeuralNetConfiguration$Builder)
         '(org.deeplearning4j.nn.conf.distribution UniformDistribution)
-        '(org.deeplearning4j.nn.conf.layers DenseLayer$Builder
+        '(org.deeplearning4j.nn.conf.layers ConvolutionLayer$Builder
+                                            DenseLayer$Builder
                                             OutputLayer$Builder)
+        '(org.deeplearning4j.nn.conf.layers.setup ConvolutionLayerSetup)
+        '(org.deeplearning4j.nn.conf.preprocessor ReshapePreProcessor)
         '(org.deeplearning4j.nn.graph ComputationGraph)
         '(org.deeplearning4j.nn.weights WeightInit)
         '(org.deeplearning4j.optimize.listeners ScoreIterationListener)
@@ -40,6 +43,14 @@
                             (int-array [(count ij) field-size])))
      field-size field-size]))
 
+(defn make-conv-layer [ni no]
+  (.. (ConvolutionLayer$Builder. (int-array [1 10]))
+      (nIn ni)
+      (nOut no)
+      (stride (int-array [1 1]))
+      (activation "sigmoid")
+      (build)))
+
 (defn make-hidden-layer [ni no]
   (.. (DenseLayer$Builder.)
       (nIn ni)
@@ -58,7 +69,7 @@
       (dist (UniformDistribution. 0 1))
       (build)))
 
-(defn make-net-conf [ni no layersize]
+(defn make-net-conf [ni no nlayer layersize]
   (.. (NeuralNetConfiguration$Builder.)
       (learningRate 0.1)
       (seed 123)
@@ -66,11 +77,16 @@
       (miniBatch false)
       (graphBuilder)
       (addInputs (into-array String ["input"]))
-      (addLayer "L1" (make-hidden-layer ni layersize)
+      (addLayer "L0" (make-conv-layer 1 layersize)
                 (into-array String ["input"]))
-      (addLayer "L2" (make-output-layer layersize no)
-                (into-array String ["L1"]))
-      (setOutputs (into-array String ["L2"]))
+      (inputPreProcessor "L0"
+       (ReshapePreProcessor. (int-array [10]) (int-array [1 10])))
+      (addLayer "L1" (make-output-layer layersize no)
+                (into-array String ["L0"]))
+      (inputPreProcessor "L1"
+       (ReshapePreProcessor. (int-array [layersize 1 1])
+                             (int-array [layersize])))
+      (setOutputs (into-array String ["L1"]))
       (build)))
 
 (defn dump-layers-params [layers]
@@ -93,9 +109,10 @@
     ))
 
 (defn -main
-  [iter layersize]
+  [iter nlayer layersize]
   (let [[ds ni no] (make-ds)
-        conf (make-net-conf ni no (read-string layersize))
+        conf (apply make-net-conf ni no
+              (map read-string [nlayer layersize]))
         net (ComputationGraph. conf)
         _ (doto net
             (.init)
