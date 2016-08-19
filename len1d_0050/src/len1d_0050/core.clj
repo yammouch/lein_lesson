@@ -5,24 +5,17 @@
 
 (import '(org.deeplearning4j.eval Evaluation)
         '(org.deeplearning4j.nn.api Layer OptimizationAlgorithm)
-        '(org.deeplearning4j.nn.conf MultiLayerConfiguration
-                                     NeuralNetConfiguration
-                                     NeuralNetConfiguration$Builder
-                                     NeuralNetConfiguration$ListBuilder)
+        '(org.deeplearning4j.nn.conf NeuralNetConfiguration$Builder)
         '(org.deeplearning4j.nn.conf.distribution UniformDistribution)
-        '(org.deeplearning4j.nn.conf.layers DenseLayer
-                                            DenseLayer$Builder
-                                            OutputLayer
+        '(org.deeplearning4j.nn.conf.layers DenseLayer$Builder
                                             OutputLayer$Builder)
-        ;'(org.deeplearning4j.nn.multilayer MultiLayerNetwork)
         '(org.deeplearning4j.nn.graph ComputationGraph)
         '(org.deeplearning4j.nn.weights WeightInit)
         '(org.deeplearning4j.optimize.listeners ScoreIterationListener)
         '(org.nd4j.linalg.api.ndarray INDArray)
         '(org.nd4j.linalg.dataset DataSet)
         '(org.nd4j.linalg.factory Nd4j)
-        '(org.nd4j.linalg.lossfunctions LossFunctions
-                                        LossFunctions$LossFunction))
+        '(org.nd4j.linalg.lossfunctions LossFunctions$LossFunction))
 
 (defn one-hot [field-size i]
   (assoc (vec (repeat field-size 0)) (dec i) 1))
@@ -110,7 +103,6 @@
         list-builder (apply make-list-builder ni no
                       (map read-string [iter nlayer layersize]))
         conf (.build list-builder)
-        ;net (MultiLayerNetwork. conf)
         net (ComputationGraph. conf)
         _ (doto net
             (.init)
