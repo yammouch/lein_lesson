@@ -74,6 +74,7 @@
     (learningRate 0.1)
     (seed 123)
     (iterations 1) ; default 5
+    (miniBatch false)
     (graphBuilder)
     (addInputs (into-array String ["input"]))
     (addLayer "L1" (.build (make-hidden-layer-builder ni layersize))
@@ -99,6 +100,7 @@
     (.eval eval (.getLabels ds) (get output 0))
     (println (.stats eval))
     (println (.score net))
+    (println (.paramTable net))
     ))
 
 (defn -main
