@@ -1,4 +1,4 @@
-; lein 10000 2 6
+; lein 10000 6
 
 (ns len1d-0050.core
   (:gen-class))
@@ -40,43 +40,38 @@
                             (int-array [(count ij) field-size])))
      field-size field-size]))
 
-(defn make-hidden-layer-builder [ni no]
-  (let [hidden-layer-builder (DenseLayer$Builder.)]
-    (doto hidden-layer-builder
-      (.nIn ni)
-      (.nOut no)
-      (.activation "sigmoid")
-      (.weightInit WeightInit/DISTRIBUTION)
-      (.dist (UniformDistribution. 0 1)))
-    hidden-layer-builder))
+(defn make-hidden-layer [ni no]
+  (.. (DenseLayer$Builder.)
+      (nIn ni)
+      (nOut no)
+      (activation "sigmoid")
+      (weightInit WeightInit/DISTRIBUTION)
+      (dist (UniformDistribution. 0 1))
+      (build)))
 
-(defn make-output-layer-builder [ni no]
-  (let [output-layer-builder
-        (OutputLayer$Builder.
-         LossFunctions$LossFunction/NEGATIVELOGLIKELIHOOD)]
-    (doto output-layer-builder
-      (.nIn ni)
-      (.nOut no)
-      ;(.activation "sigmoid")
-      (.activation "softmax")
-      (.weightInit WeightInit/DISTRIBUTION)
-      (.dist (UniformDistribution. 0 1)))
-    output-layer-builder))
+(defn make-output-layer [ni no]
+  (.. (OutputLayer$Builder. LossFunctions$LossFunction/NEGATIVELOGLIKELIHOOD)
+      (nIn ni)
+      (nOut no)
+      (activation "softmax")
+      (weightInit WeightInit/DISTRIBUTION)
+      (dist (UniformDistribution. 0 1))
+      (build)))
 
-(defn make-list-builder [ni no iter nlayer layersize]
+(defn make-net-conf [ni no layersize]
   (.. (NeuralNetConfiguration$Builder.)
-    (learningRate 0.1)
-    (seed 123)
-    (iterations 1) ; default 5
-    (miniBatch false)
-    (graphBuilder)
-    (addInputs (into-array String ["input"]))
-    (addLayer "L1" (.build (make-hidden-layer-builder ni layersize))
-              (into-array String ["input"]))
-    (addLayer "L2" (.build (make-output-layer-builder layersize no))
-              (into-array String ["L1"]))
-    (setOutputs (into-array String ["L2"]))
-    ))
+      (learningRate 0.1)
+      (seed 123)
+      (iterations 1) ; default 5
+      (miniBatch false)
+      (graphBuilder)
+      (addInputs (into-array String ["input"]))
+      (addLayer "L1" (make-hidden-layer ni layersize)
+                (into-array String ["input"]))
+      (addLayer "L2" (make-output-layer layersize no)
+                (into-array String ["L1"]))
+      (setOutputs (into-array String ["L2"]))
+      (build)))
 
 (defn dump-layers-params [layers]
   (loop [i 0, totalNumParams 0]
@@ -98,11 +93,9 @@
     ))
 
 (defn -main
-  [iter nlayer layersize]
+  [iter layersize]
   (let [[ds ni no] (make-ds)
-        list-builder (apply make-list-builder ni no
-                      (map read-string [iter nlayer layersize]))
-        conf (.build list-builder)
+        conf (make-net-conf ni no (read-string layersize))
         net (ComputationGraph. conf)
         _ (doto net
             (.init)
