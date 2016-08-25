@@ -4,6 +4,10 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
+  ; refer to
+  ; https://github.com/deeplearning4j/deeplearning4j/issues/1819 
+                 [org.nd4j/nd4j-native "0.4.0" :classifier "windows-x86_64-openblas"]
+                 [org.nd4j/nd4j-native "0.4.0" :classifier "windows-x86_64" :scope "provided"]
                  [org.nd4j/nd4j-native-platform "0.4.0"]
                  ;[org.nd4j/nd4j-cuda-7.5-platform "0.4.0"]
                  [org.deeplearning4j/deeplearning4j-nlp  "0.4.0"]

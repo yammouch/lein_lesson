@@ -1,4 +1,4 @@
-; lein 10000 2 6
+; lein 20000 2 6
 
 (ns len1d-0050.core
   (:gen-class))
@@ -11,7 +11,9 @@
                                             DenseLayer$Builder
                                             OutputLayer$Builder)
         '(org.deeplearning4j.nn.conf.layers.setup ConvolutionLayerSetup)
-        '(org.deeplearning4j.nn.conf.preprocessor ReshapePreProcessor)
+        ;'(org.deeplearning4j.nn.conf.preprocessor ReshapePreProcessor)
+        '(org.deeplearning4j.nn.conf.preprocessor
+          FeedForwardToCnnPreProcessor CnnToFeedForwardPreProcessor)
         '(org.deeplearning4j.nn.graph ComputationGraph)
         '(org.deeplearning4j.nn.weights WeightInit)
         '(org.deeplearning4j.optimize.listeners ScoreIterationListener)
@@ -80,12 +82,11 @@
       (addLayer "L0" (make-conv-layer 1 layersize)
                 (into-array String ["input"]))
       (inputPreProcessor "L0"
-       (ReshapePreProcessor. (int-array [10]) (int-array [1 10])))
+       (FeedForwardToCnnPreProcessor. 1 10 1))
       (addLayer "L1" (make-output-layer layersize no)
                 (into-array String ["L0"]))
       (inputPreProcessor "L1"
-       (ReshapePreProcessor. (int-array [layersize 1 1])
-                             (int-array [layersize])))
+       (CnnToFeedForwardPreProcessor. 1 1 layersize))
       (setOutputs (into-array String ["L1"]))
       (build)))
 
