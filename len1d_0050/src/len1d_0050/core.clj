@@ -51,6 +51,8 @@
       (nOut no)
       (stride (int-array [1 1]))
       (activation "sigmoid")
+      (weightInit WeightInit/DISTRIBUTION)
+      (dist (UniformDistribution. 0 1))
       (build)))
 
 (defn make-hidden-layer [ni no]
@@ -77,6 +79,7 @@
       (seed 123)
       (iterations 1) ; default 5
       (miniBatch false)
+      ;(miniBatch true)
       (graphBuilder)
       (addInputs (into-array String ["input"]))
       (addLayer "L0" (make-conv-layer 1 layersize)
