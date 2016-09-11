@@ -1,4 +1,4 @@
-; lein run 10000 2 6
+; lein run 500000 2 6
 
 (ns len1d-0070.core
   (:gen-class))
@@ -39,24 +39,29 @@
                              t (bit-shift-right t  8)))]
     (cons w (lazy-seq (xorshift y z w wn)))))
 
-(defn make-ds []
+(defn make-input-labels []
   (let [field-size 10
         ij (for [i (range      field-size )
                  j (range (inc field-size)) :when (< i j)]
              [i j])
         input  (mapcat (partial apply a-field field-size)        ij)
         labels (mapcat (fn [[i j]] (one-hot field-size (- j i))) ij)]
-    [(MultiDataSet.
-      (into-array INDArray
-       [(Nd4j/create (float-array input)
-                     (int-array [(count ij) field-size]))])
-      (into-array INDArray
-       [(Nd4j/create (float-array labels)
-                     (int-array [(count ij) field-size]))
-        (Nd4j/create (float-array labels)
-                     (int-array [(count ij) field-size])
-                     )]))
+    [(Nd4j/create (float-array input)
+                  (int-array [(count ij) field-size]))
+     (Nd4j/create (float-array labels)
+                  (int-array [(count ij) field-size]))
      field-size field-size]))
+
+(defn make-minibatches [sb-size in-nd lbl-nd]
+  (map (fn [indices]
+         (MultiDataSet.
+          (into-array INDArray [(.getRows in-nd  (int-array indices))])
+          (into-array INDArray [(.getRows lbl-nd (int-array indices))
+                                (.getRows lbl-nd (int-array indices))
+                                ])))
+       (partition sb-size (map #(mod % (.size in-nd 0))
+                               (xorshift 2 4 6 8)
+                               ))))
 
 (defn make-conv-layer [ni no]
   (.. (ConvolutionLayer$Builder. (int-array [1 10]))
@@ -91,8 +96,8 @@
       (learningRate 0.1)
       (seed 123)
       (iterations 1) ; default 5
-      (miniBatch false)
-      ;(miniBatch true)
+      ;(miniBatch false)
+      (miniBatch true)
       (graphBuilder)
       (addInputs (into-array String ["input"]))
       (addLayer "L0" (make-conv-layer 1 layersize)
@@ -133,7 +138,7 @@
 
 (defn -main
   [iter nlayer layersize]
-  (let [[ds ni no] (make-ds)
+  (let [[in-nd lbl-nd ni no] (make-input-labels)
         conf (apply make-net-conf ni no
               (map read-string [nlayer layersize]))
         net (ComputationGraph. conf)
@@ -142,6 +147,9 @@
             (.setListeners [(ScoreIterationListener. 100)]))
         layers (.getLayers net)]
     (dump-layers-params layers)
-    (time (doseq [_ (range (read-string iter))] (.fit net ds)))
-    (dump-result ds net no)
-    ))
+    (time (doseq [d (take (read-string iter)
+                          (make-minibatches 16 in-nd lbl-nd))] 
+            (.fit net d)))
+    (dump-result (MultiDataSet. (into-array INDArray [in-nd])
+                                (into-array INDArray [lbl-nd lbl-nd]))
+                 net no)))
