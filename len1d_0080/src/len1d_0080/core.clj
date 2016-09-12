@@ -57,7 +57,6 @@
          (MultiDataSet.
           (into-array INDArray [(.getRows in-nd  (int-array indices))])
           (into-array INDArray [(.getRows lbl-nd (int-array indices))
-                                (.getRows lbl-nd (int-array indices))
                                 ])))
        (partition sb-size (map #(mod % (.size in-nd 0))
                                (xorshift 2 4 6 8)
@@ -107,11 +106,7 @@
                 (into-array String ["L0"]))
       (inputPreProcessor "L1"
        (CnnToFeedForwardPreProcessor. 1 1 layersize))
-      (addLayer "L2" (make-output-layer layersize no)
-                (into-array String ["L0"]))
-      (inputPreProcessor "L2"
-       (CnnToFeedForwardPreProcessor. 1 1 layersize))
-      (setOutputs (into-array String ["L1" "L2"]))
+      (setOutputs (into-array String ["L1"]))
       (build)))
 
 (defn dump-layers-params [layers]
@@ -126,10 +121,7 @@
 (defn dump-result [ds net no]
   (let [output (.output net (into-array INDArray [(.getFeatures ds 0)]))
         eval (Evaluation. no)]
-    (println (get output 0))
     (.eval eval (.getLabels ds 0) (get output 0))
-    (println (.stats eval))
-    (.eval eval (.getLabels ds 1) (get output 1))
     (println (.stats eval))
     (println (.score net))
     ;(println (.paramTable net))
@@ -150,5 +142,5 @@
                           (make-minibatches 16 in-nd lbl-nd))] 
             (.fit net d)))
     (dump-result (MultiDataSet. (into-array INDArray [in-nd])
-                                (into-array INDArray [lbl-nd lbl-nd]))
+                                (into-array INDArray [lbl-nd]))
                  net no)))
