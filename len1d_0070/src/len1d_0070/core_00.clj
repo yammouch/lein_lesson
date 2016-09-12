@@ -64,11 +64,10 @@
                                ))))
 
 (defn make-conv-layer [ni no]
-  (.. (ConvolutionLayer$Builder. (int-array [1 5]))
+  (.. (ConvolutionLayer$Builder. (int-array [1 20]))
       (nIn ni)
-      (nOut 20)
+      (nOut no)
       (stride (int-array [1 1]))
-      (padding (int-array [0 2]))
       (activation "sigmoid")
       (weightInit WeightInit/DISTRIBUTION)
       (dist (UniformDistribution. 0 1))
@@ -85,7 +84,7 @@
 
 (defn make-output-layer [ni no]
   (.. (OutputLayer$Builder. LossFunctions$LossFunction/NEGATIVELOGLIKELIHOOD)
-      (nIn 400)
+      (nIn ni)
       (nOut no)
       (activation "softmax")
       (weightInit WeightInit/DISTRIBUTION)
@@ -108,11 +107,11 @@
       (addLayer "L1" (make-output-layer layersize no)
                 (into-array String ["L0"]))
       (inputPreProcessor "L1"
-       (CnnToFeedForwardPreProcessor. 1 20 20))
+       (CnnToFeedForwardPreProcessor. 1 1 layersize))
       (addLayer "L2" (make-output-layer layersize no)
                 (into-array String ["L0"]))
       (inputPreProcessor "L2"
-       (CnnToFeedForwardPreProcessor. 1 20 20))
+       (CnnToFeedForwardPreProcessor. 1 1 layersize))
       (setOutputs (into-array String ["L1" "L2"]))
       (build)))
 
