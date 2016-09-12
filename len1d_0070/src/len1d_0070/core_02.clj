@@ -1,4 +1,4 @@
-; lein run 500000 2 6
+; does not converge with 'lein run 500000 2 20'
 
 (ns len1d-0070.core
   (:gen-class))

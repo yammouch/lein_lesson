@@ -1,4 +1,4 @@
-; lein run 500000 2 6
+; lein run 200000 2 20
 
 (ns len1d-0070.core
   (:gen-class))
