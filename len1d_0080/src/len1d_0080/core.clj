@@ -1,4 +1,4 @@
-; lein run 50000 2 6
+; lein run 10 5 2 20000
 
 (ns len1d-0080.core
   (:gen-class))
@@ -39,9 +39,8 @@
                              t (bit-shift-right t  8)))]
     (cons w (lazy-seq (xorshift y z w wn)))))
 
-(defn make-input-labels []
-  (let [field-size 10
-        ij (for [i (range      field-size )
+(defn make-input-labels [field-size]
+  (let [ij (for [i (range      field-size )
                  j (range (inc field-size)) :when (< i j)]
              [i j])
         input  (mapcat (partial apply a-field field-size)        ij)
@@ -49,48 +48,40 @@
     [(Nd4j/create (float-array input)
                   (int-array [(count ij) field-size]))
      (Nd4j/create (float-array labels)
-                  (int-array [(count ij) field-size]))
-     field-size field-size]))
+                  (int-array [(count ij) field-size])
+                  )]))
 
 (defn make-minibatches [sb-size in-nd lbl-nd]
   (map (fn [indices]
          (MultiDataSet.
           (into-array INDArray [(.getRows in-nd  (int-array indices))])
-          (into-array INDArray [(.getRows lbl-nd (int-array indices))
-                                ])))
+          (into-array INDArray [(.getRows lbl-nd (int-array indices))])))
        (partition sb-size (map #(mod % (.size in-nd 0))
                                (xorshift 2 4 6 8)
                                ))))
 
-(defn make-conv-layer [ni no]
-  (.. (ConvolutionLayer$Builder. (int-array [1 10]))
-      (nIn ni)
-      (nOut no)
+(defn make-conv-layer [conv-size conv-depth]
+  (.. (ConvolutionLayer$Builder. (int-array [1 conv-size]))
+      (nIn 1)
+      (nOut conv-depth)
       (stride (int-array [1 1]))
+      (padding (int-array [0 (quot conv-size 2)]))
       (activation "sigmoid")
       (weightInit WeightInit/DISTRIBUTION)
       (dist (UniformDistribution. 0 1))
       (build)))
 
-(defn make-hidden-layer [ni no]
-  (.. (DenseLayer$Builder.)
-      (nIn ni)
-      (nOut no)
-      (activation "sigmoid")
-      (weightInit WeightInit/DISTRIBUTION)
-      (dist (UniformDistribution. 0 1))
-      (build)))
-
-(defn make-output-layer [ni no]
+(defn make-output-layer [field-size conv-size conv-depth]
   (.. (OutputLayer$Builder. LossFunctions$LossFunction/NEGATIVELOGLIKELIHOOD)
-      (nIn ni)
-      (nOut no)
+      (nIn (* (+ field-size (if (even? conv-size) 1 0))
+              conv-depth))
+      (nOut field-size)
       (activation "softmax")
       (weightInit WeightInit/DISTRIBUTION)
       (dist (UniformDistribution. 0 1))
       (build)))
 
-(defn make-net-conf [ni no nlayer layersize]
+(defn make-net-conf [field-size conv-size conv-depth]
   (.. (NeuralNetConfiguration$Builder.)
       (learningRate 0.1)
       (seed 123)
@@ -98,14 +89,17 @@
       (miniBatch false)
       (graphBuilder)
       (addInputs (into-array String ["input"]))
-      (addLayer "L0" (make-conv-layer 1 layersize)
+      (addLayer "L0" (make-conv-layer conv-size conv-depth)
                 (into-array String ["input"]))
       (inputPreProcessor "L0"
-       (FeedForwardToCnnPreProcessor. 1 10 1))
-      (addLayer "L1" (make-output-layer layersize no)
+       (FeedForwardToCnnPreProcessor. 1 field-size 1))
+      (addLayer "L1" (make-output-layer field-size conv-size conv-depth)
                 (into-array String ["L0"]))
       (inputPreProcessor "L1"
-       (CnnToFeedForwardPreProcessor. 1 1 layersize))
+       (CnnToFeedForwardPreProcessor.
+        1
+        (+ field-size (if (even? conv-size) 1 0))
+        conv-depth))
       (setOutputs (into-array String ["L1"]))
       (build)))
 
@@ -124,14 +118,14 @@
     (.eval eval (.getLabels ds 0) (get output 0))
     (println (.stats eval))
     (println (.score net))
-    ;(println (.paramTable net))
+    (println (.paramTable net))
     ))
 
 (defn -main
-  [iter nlayer layersize]
-  (let [[in-nd lbl-nd ni no] (make-input-labels)
-        conf (apply make-net-conf ni no
-              (map read-string [nlayer layersize]))
+  [field-size conv-size conv-depth iter]
+  (let [[in-nd lbl-nd] (make-input-labels (read-string field-size))
+        conf (apply make-net-conf
+              (map read-string [field-size conv-size conv-depth]))
         net (ComputationGraph. conf)
         _ (doto net
             (.init)
@@ -143,4 +137,4 @@
             (.fit net d)))
     (dump-result (MultiDataSet. (into-array INDArray [in-nd])
                                 (into-array INDArray [lbl-nd]))
-                 net no)))
+                 net (read-string field-size))))
