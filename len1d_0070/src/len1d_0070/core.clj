@@ -40,7 +40,7 @@
     (cons w (lazy-seq (xorshift y z w wn)))))
 
 (defn make-input-labels []
-  (let [field-size 20
+  (let [field-size 10
         ij (for [i (range      field-size )
                  j (range (inc field-size)) :when (< i j)]
              [i j])
@@ -64,11 +64,10 @@
                                ))))
 
 (defn make-conv-layer [ni no]
-  (.. (ConvolutionLayer$Builder. (int-array [1 5]))
+  (.. (ConvolutionLayer$Builder. (int-array [1 10]))
       (nIn ni)
-      (nOut 20)
+      (nOut no)
       (stride (int-array [1 1]))
-      (padding (int-array [0 2]))
       (activation "sigmoid")
       (weightInit WeightInit/DISTRIBUTION)
       (dist (UniformDistribution. 0 1))
@@ -85,7 +84,7 @@
 
 (defn make-output-layer [ni no]
   (.. (OutputLayer$Builder. LossFunctions$LossFunction/NEGATIVELOGLIKELIHOOD)
-      (nIn 400)
+      (nIn ni)
       (nOut no)
       (activation "softmax")
       (weightInit WeightInit/DISTRIBUTION)
@@ -97,22 +96,22 @@
       (learningRate 0.1)
       (seed 123)
       (iterations 1) ; default 5
-      (miniBatch false)
-      ;(miniBatch true)
+      ;(miniBatch false)
+      (miniBatch true)
       (graphBuilder)
       (addInputs (into-array String ["input"]))
       (addLayer "L0" (make-conv-layer 1 layersize)
                 (into-array String ["input"]))
       (inputPreProcessor "L0"
-       (FeedForwardToCnnPreProcessor. 1 20 1))
+       (FeedForwardToCnnPreProcessor. 1 10 1))
       (addLayer "L1" (make-output-layer layersize no)
                 (into-array String ["L0"]))
       (inputPreProcessor "L1"
-       (CnnToFeedForwardPreProcessor. 1 20 20))
+       (CnnToFeedForwardPreProcessor. 1 1 layersize))
       (addLayer "L2" (make-output-layer layersize no)
                 (into-array String ["L0"]))
       (inputPreProcessor "L2"
-       (CnnToFeedForwardPreProcessor. 1 20 20))
+       (CnnToFeedForwardPreProcessor. 1 1 layersize))
       (setOutputs (into-array String ["L1" "L2"]))
       (build)))
 
@@ -145,7 +144,7 @@
         net (ComputationGraph. conf)
         _ (doto net
             (.init)
-            (.setListeners [(ScoreIterationListener. 1000)]))
+            (.setListeners [(ScoreIterationListener. 100)]))
         layers (.getLayers net)]
     (dump-layers-params layers)
     (time (doseq [d (take (read-string iter)
