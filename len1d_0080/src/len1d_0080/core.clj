@@ -118,24 +118,30 @@
     (.eval eval (.getLabels ds 0) (get output 0))
     (println (.stats eval))
     (println (.score net))
-    (println (.paramTable net))
+    ;(println (.paramTable net))
     ))
 
 (defn -main
   [field-size max-len conv-size conv-depth iter]
-  (let [[in-nd lbl-nd] (apply make-input-labels
-                        (map read-string [field-size max-len]))
-        conf (apply make-net-conf
-              (map read-string [field-size conv-size conv-depth max-len]))
+  (let [[field-size max-len conv-size conv-depth iter]
+        (map read-string [field-size max-len conv-size conv-depth iter])
+        [in-nd lbl-nd] (make-input-labels field-size max-len)
+        conf ( make-net-conf field-size conv-size conv-depth max-len)
         net (ComputationGraph. conf)
         _ (doto net
             (.init)
-            (.setListeners [(ScoreIterationListener. 100)]))
+            ;(.setListeners [(ScoreIterationListener. 100)]))
+            )
         layers (.getLayers net)]
     (dump-layers-params layers)
-    (time (doseq [d (take (read-string iter)
-                          (make-minibatches 16 in-nd lbl-nd))] 
-            (.fit net d)))
-    (dump-result (MultiDataSet. (into-array INDArray [in-nd])
-                                (into-array INDArray [lbl-nd]))
-                 net (read-string max-len))))
+    (loop [i 0, minibatches (make-minibatches 16 in-nd lbl-nd)]
+      (if (< iter i)
+        :done
+        (do (.fit net (first minibatches))
+            (when (= (mod i 1000) 0)
+              (println "iter: " i)
+              (dump-result (MultiDataSet. (into-array INDArray [in-nd])
+                                          (into-array INDArray [lbl-nd]))
+                           net max-len))
+            (recur (inc i) (next minibatches))
+            )))))
