@@ -1,4 +1,11 @@
-; lein run 10 10 5 2 20000
+; lein run  10 10  5  2 20000 # converges
+; lein run  20 10  5 10 50000 # converges
+; lein run 100 10  5 10 50000 # converges
+; lein run 100 20  5 10 50000 # not converges
+; lein run 100 20 10 10 50000 # not converges
+; lein run 100 20 10 20 50000 # not converges
+; lein run 100 20 10 40 50000 # not converges
+; lein run 100 20 20 40 50000 # converges
 
 (ns len1d-0080.core
   (:gen-class))
