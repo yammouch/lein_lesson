@@ -1,7 +1,9 @@
 (ns xychart.core
   (:gen-class))
 
-(import '(org.jfree.data.category DefaultCategoryDataset)
+(import '(java.awt Dimension Color BasicStroke)
+        '(org.jfree.data.xy XYSeries XYSeriesCollection)
+        '(org.jfree.chart.renderer.xy XYLineAndShapeRenderer)
         '(org.jfree.chart ChartFactory ChartPanel)
         '(org.jfree.chart.plot PlotOrientation)
         '(org.jfree.ui ApplicationFrame RefineryUtilities))
@@ -25,13 +27,13 @@
                     true true false)
         chart-panel (ChartPanel. xyline-chart)
         renderer (XYLineAndShapeRenderer.)]
-    (.setPreferredSize chart-panel (java.awt.Dimension. 560 367))
+    (.setPreferredSize chart-panel (Dimension. 560 367))
     (doseq [[i c] [[0 Color/RED] [1 Color/GREEN] [2 Color/YELLOW]]]
       (.setSeriesPaint renderer i c))
-    (doseq [[i s] [[0 4.0f] [1 3.0f] [2 2.0f]]]
-      (.setSeriesStroke renderer i s))
+    (doseq [[i s] [[0 4.0] [1 3.0] [2 2.0]]]
+      (.setSeriesStroke renderer i (BasicStroke. (float s))))
     (.. xyline-chart getXYPlot (setRenderer renderer))
-    (.setContentPane chart chart-panel)))
+    (.setContentPane chart chart-panel)
     (.pack chart)
     (RefineryUtilities/centerFrameOnScreen chart)
     (.setVisible chart true)))
