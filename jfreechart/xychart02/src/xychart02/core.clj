@@ -8,10 +8,13 @@
         '(org.jfree.chart.plot PlotOrientation)
         '(org.jfree.ui ApplicationFrame RefineryUtilities))
 
+(def ds (ref []))
+(def fr (ref nil))
+
 (defn create-dataset [pre-ds]
   (let [d1 (XYSeries. "data1")
         dataset   (XYSeriesCollection.)]
-    (doseq [[x y] (map vector (range) pre-ds)] (.add d1 x y))
+    (doseq [[x y] pre-ds] (.add d1 x y))
     (.addSeries dataset d1)
     dataset))
 
@@ -26,9 +29,9 @@
     (.. xyline-chart getXYPlot (setRenderer renderer))
     xyline-chart))
 
-(defn graph [application-title]
-  (let [frame (ApplicationFrame. application-title)
-        panel (ChartPanel. (create-chart [1.0 2.0 1.0]))]
+(defn graph [pre-ds]
+  (let [frame (ApplicationFrame. "Schematic Disentangler")
+        panel (ChartPanel. (create-chart pre-ds))]
     (.setPreferredSize panel (Dimension. 560 367))
     (.setContentPane frame panel)
     (.pack frame)
@@ -36,12 +39,25 @@
     (.setVisible frame true)
     frame))
 
+(defn add-data [x y]
+  (dosync
+    (alter ds conj [x y])
+    (if @fr
+      (.. @fr getContentPane
+          (setChart (create-chart @ds)))
+      (ref-set fr (graph @ds)))))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (let [frame (graph "Browser Usage Statistics")]
-    (println "Press Enter")
-    (read-line)
-    (.. frame getContentPane
-        (setChart (create-chart [1.0 2.0 3.0])))
-    :done))
+  (println "Press Enter") (read-line)
+  (add-data 0 0)
+  (println "Press Enter") (read-line)
+  (add-data 1 1)
+  (println "Press Enter") (read-line)
+  (add-data 2 4)
+  (println "Press Enter") (read-line)
+  (add-data 3 9)
+  (println "Press Enter") (read-line)
+  (add-data 4 16)
+  :done)
