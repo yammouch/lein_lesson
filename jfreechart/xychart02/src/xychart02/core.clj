@@ -8,33 +8,27 @@
         '(org.jfree.chart.plot PlotOrientation)
         '(org.jfree.ui ApplicationFrame RefineryUtilities))
 
-(defn create-dataset []
-  (let [firefox   (XYSeries. "Firefox")
-        chrome    (XYSeries. "Chrome")
-        iexplorer (XYSeries. "InternetExplorer")
+(defn create-dataset [pre-ds]
+  (let [d1 (XYSeries. "data1")
         dataset   (XYSeriesCollection.)]
-    (doseq [[x y] [[1.0 1.0] [2.0 4.0] [3.0 3.0]]] (.add firefox   x y))
-    (doseq [[x y] [[1.0 4.0] [2.0 5.0] [3.0 6.0]]] (.add chrome    x y))
-    (doseq [[x y] [[3.0 4.0] [4.0 5.0] [5.0 4.0]]] (.add iexplorer x y))
-    (doseq [d [firefox chrome iexplorer]] (.addSeries dataset d))
+    (doseq [[x y] (map vector (range) pre-ds)] (.add d1 x y))
+    (.addSeries dataset d1)
     dataset))
 
-(defn create-chart [chart-title]
+(defn create-chart [pre-ds]
   (let [xyline-chart (ChartFactory/createXYLineChart
-                      chart-title "Category" "Score"
-                      (create-dataset) PlotOrientation/VERTICAL
+                      "Which browser are you using?" "Category" "Score"
+                      (create-dataset pre-ds) PlotOrientation/VERTICAL
                       true true false)
         renderer (XYLineAndShapeRenderer.)]
-    (doseq [[i c] [[0 Color/RED] [1 Color/GREEN] [2 Color/YELLOW]]]
-      (.setSeriesPaint renderer i c))
-    (doseq [[i s] [[0 4.0] [1 3.0] [2 2.0]]]
-      (.setSeriesStroke renderer i (BasicStroke. (float s))))
+    (.setSeriesPaint renderer 0 Color/RED)
+    (.setSeriesStroke renderer 0 (BasicStroke. (float 4.0)))
     (.. xyline-chart getXYPlot (setRenderer renderer))
     xyline-chart))
 
 (defn graph [application-title]
   (let [frame (ApplicationFrame. application-title)
-        panel (ChartPanel. (create-chart "Which browser are you using?"))]
+        panel (ChartPanel. (create-chart [1.0 2.0 1.0]))]
     (.setPreferredSize panel (Dimension. 560 367))
     (.setContentPane frame panel)
     (.pack frame)
@@ -46,8 +40,8 @@
   "I don't do a whole lot ... yet."
   [& args]
   (let [frame (graph "Browser Usage Statistics")]
+    (println "Press Enter")
+    (read-line)
+    (.. frame getContentPane
+        (setChart (create-chart [1.0 2.0 3.0])))
     :done))
-    ;(.. frame getContentPane
-    ;    (setChart (create-chart "Which Browser are you using?")))
-    ;    )))
-    ;))
