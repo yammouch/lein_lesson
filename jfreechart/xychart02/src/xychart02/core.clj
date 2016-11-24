@@ -6,7 +6,10 @@
         '(org.jfree.chart.renderer.xy XYLineAndShapeRenderer)
         '(org.jfree.chart ChartFactory ChartPanel)
         '(org.jfree.chart.plot PlotOrientation)
-        '(org.jfree.ui ApplicationFrame RefineryUtilities))
+        '(org.jfree.ui ApplicationFrame RefineryUtilities)
+        '(java.awt Toolkit)
+        '(java.awt.event WindowEvent)
+        '(javax.swing WindowConstants))
 
 (def ds (ref []))
 (def fr (ref nil))
@@ -35,6 +38,7 @@
     (.setPreferredSize panel (Dimension. 560 367))
     (.setContentPane frame panel)
     (.pack frame)
+    (.setDefaultCloseOperation frame WindowConstants/DO_NOTHING_ON_CLOSE)
     (RefineryUtilities/centerFrameOnScreen frame)
     (.setVisible frame true)
     frame))
@@ -50,14 +54,16 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (println "Press Enter") (read-line)
-  (add-data 0 0)
-  (println "Press Enter") (read-line)
-  (add-data 1 1)
-  (println "Press Enter") (read-line)
-  (add-data 2 4)
-  (println "Press Enter") (read-line)
-  (add-data 3 9)
-  (println "Press Enter") (read-line)
-  (add-data 4 16)
+  (add-data 0  0) (Thread/sleep 500)
+  (add-data 1  1) (Thread/sleep 500)
+  (add-data 2  4) (Thread/sleep 500)
+  (add-data 3  9) (Thread/sleep 500)
+  (add-data 4 16) (Thread/sleep 500)
+  (prn @fr)
+  ;(let [e (WindowEvent. @fr WindowEvent/WINDOW_CLOSING)]
+  ;  (.. (Toolkit/getDefaultToolkit) getSystemEventQueue
+  ;      (postEvent e)))
+  (Thread/sleep 500)
+  (prn "hogehoge")
+  (prn @fr)
   :done)
