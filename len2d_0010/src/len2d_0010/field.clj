@@ -15,3 +15,6 @@
           (reduce (fn [acc x] (vec (repeat x acc)))
                   0 [fs fs])
           (range start (inc stop))))
+
+(defn one-hot [fs i]
+  (assoc (vec (repeat fs 0)) (dec i) 1))
