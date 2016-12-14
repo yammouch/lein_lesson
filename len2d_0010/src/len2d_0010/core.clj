@@ -72,11 +72,11 @@
                                ))))
 
 (defn make-conv-layer [conv-size conv-depth]
-  (.. (ConvolutionLayer$Builder. (int-array [1 conv-size]))
+  (.. (ConvolutionLayer$Builder. (int-array [conv-size conv-size]))
       (nIn 1)
       (nOut conv-depth)
       (stride (int-array [1 1]))
-      (padding (int-array [0 (quot conv-size 2)]))
+      (padding (int-array (repeat 2 (quot conv-size 2))))
       (activation "sigmoid")
       (weightInit WeightInit/DISTRIBUTION)
       (dist (UniformDistribution. 0 1))
@@ -84,8 +84,8 @@
 
 (defn make-output-layer [field-size conv-size conv-depth max-len]
   (.. (OutputLayer$Builder. LossFunctions$LossFunction/NEGATIVELOGLIKELIHOOD)
-      (nIn (* (+ field-size (if (even? conv-size) 1 0))
-              conv-depth))
+      (nIn (let [length (+ field-size (if (even? conv-size) 1 0))]
+             (* length length conv-depth)))
       (nOut max-len)
       (activation "softmax")
       (weightInit WeightInit/DISTRIBUTION)
@@ -103,14 +103,12 @@
       (addLayer "L0" (make-conv-layer conv-size conv-depth)
                 (into-array String ["input"]))
       (inputPreProcessor "L0"
-       (FeedForwardToCnnPreProcessor. 1 field-size 1))
+       (FeedForwardToCnnPreProcessor. field-size field-size 1))
       (addLayer "L1" (make-output-layer field-size conv-size conv-depth max-len)
                 (into-array String ["L0"]))
       (inputPreProcessor "L1"
-       (CnnToFeedForwardPreProcessor.
-        1
-        (+ field-size (if (even? conv-size) 1 0))
-        conv-depth))
+        (let [length (+ field-size (if (even? conv-size) 1 0))]
+          (CnnToFeedForwardPreProcessor. length length conv-depth)))
       (setOutputs (into-array String ["L1"]))
       (build)))
 
