@@ -9,4 +9,6 @@
                  [org.jfree/jfreechart "1.0.19"]]
   :main ^:skip-aot len2d-0010.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all}}
+  :jvm-opts ["-Xms2g" "-Xmx2g"]
+)
