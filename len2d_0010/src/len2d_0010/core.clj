@@ -1,11 +1,6 @@
-; lein run  10 10  5  2 20000 # converges
-; lein run  20 10  5 10 50000 # converges
-; lein run 100 10  5 10 50000 # converges
-; lein run 100 20  5 10 50000 # does not converge
-; lein run 100 20 10 10 50000 # does not converge
-; lein run 100 20 10 20 50000 # does not converge
-; lein run 100 20 10 40 50000 # does not converge
-; lein run 100 20 20 40 50000 # converges
+; lein run  10 10  5  2 100000 # converges
+; lein run  20 10  5 10 200000 # does not converges
+; lein run 100 10  5 10 200000 # OutOfMemoryError
 
 (ns len2d-0010.core
   (:gen-class))
@@ -127,7 +122,7 @@
     (.eval eval (.getLabels ds 0) (get output 0))
     (println (.stats eval))
     (println (.score net))
-    (plt/add-data iter (.accuracy eval))
+    ;(plt/add-data iter (.accuracy eval))
     ;(println (.paramTable net))
     ))
 
