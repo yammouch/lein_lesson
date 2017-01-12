@@ -90,7 +90,7 @@
 
 (defn make-output-layer [field-size conv-size conv-depth max-len]
   (.. (OutputLayer$Builder. LossFunctions$LossFunction/NEGATIVELOGLIKELIHOOD)
-      (nIn (let [length (+ field-size (if (even? conv-size) 1 0))]
+      (nIn (let [length (+ field-size (if (even? conv-size) 2 0))]
              (* length length conv-depth)))
       (nOut max-len)
       (activation "softmax")
@@ -115,7 +115,7 @@
       (addLayer "L2" (make-output-layer field-size conv-size conv-depth max-len)
                 (into-array String ["L1"]))
       (inputPreProcessor "L2"
-        (let [length (+ field-size (if (even? conv-size) 1 0))]
+        (let [length (+ field-size (if (even? conv-size) 2 0))]
           (CnnToFeedForwardPreProcessor. length length conv-depth)))
       (setOutputs (into-array String ["L2"]))
       (build)))
