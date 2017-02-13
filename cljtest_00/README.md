@@ -4,7 +4,15 @@ A Clojure library designed to ... well, that part is up to you.
 
 ## Usage
 
-FIXME
+$ lein test
+
+$ lein test :all
+
+$ lein test :only cljtest.core-test/long-test1
+
+$ lein test :only cljtest.core-test/long-test2
+
+$ lein test :only cljtest.core-test/short-test
 
 ## License
 
